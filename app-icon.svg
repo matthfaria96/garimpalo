@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- fundo grafite azulado, mais claro em cima -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2f3d"/>
+      <stop offset="0.55" stop-color="#151821"/>
+      <stop offset="1" stop-color="#0a0b10"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="512" cy="540" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6c453" stop-opacity="0.32"/>
+      <stop offset="0.6" stop-color="#f6c453" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#f6c453" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- ouro polido -->
+    <linearGradient id="gold" x1="300" y1="290" x2="724" y2="734" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff4c2"/>
+      <stop offset="0.28" stop-color="#f7cf62"/>
+      <stop offset="0.55" stop-color="#d79a2b"/>
+      <stop offset="0.8" stop-color="#9c6414"/>
+      <stop offset="1" stop-color="#6b420b"/>
+    </linearGradient>
+    <linearGradient id="goldRim" x1="330" y1="300" x2="694" y2="724" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.35" stop-color="#f3c14f"/>
+      <stop offset="0.7" stop-color="#a86d18"/>
+      <stop offset="1" stop-color="#5c380a"/>
+    </linearGradient>
+    <linearGradient id="goldInner" x1="694" y1="724" x2="330" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe9a3"/>
+      <stop offset="0.5" stop-color="#c88b25"/>
+      <stop offset="1" stop-color="#6b420b"/>
+    </linearGradient>
+    <radialGradient id="recess" cx="512" cy="512" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0.3" stop-color="#07080b"/>
+      <stop offset="1" stop-color="#1a1c22"/>
+    </radialGradient>
+    <linearGradient id="tire" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b3e47"/>
+      <stop offset="0.5" stop-color="#1c1e24"/>
+      <stop offset="1" stop-color="#0c0d10"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffe6a0"/>
+    </linearGradient>
+    <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="wheelShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <!-- corpo do ícone (grade do macOS: 824 px com cantos contínuos) -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  </g>
+  <g clip-path="url(#body)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
+    <!-- palhetas de ouro: o fundo da bateia -->
+    <g fill="url(#gold)" opacity="0.9">
+    <path d="M184.7 747.1 L198.3 744.9 L211.1 755.9 L208.8 768.7 L196.3 774.5 L182.3 767.0 Z"/>
+    <path d="M235.7 800.2 L239.9 793.1 L249.9 791.5 L254.9 797.4 L252.8 805.4 L243.9 809.0 Z"/>
+    <path d="M294.7 831.7 L299.9 829.9 L305.6 833.3 L305.6 838.5 L301.1 841.7 L295.1 839.7 Z"/>
+    <path d="M764.6 776.2 L776.4 778.4 L783.5 791.1 L777.9 800.8 L766.0 801.9 L756.8 791.6 Z"/>
+    <path d="M813.1 729.8 L818.4 724.7 L827.3 725.6 L830.2 731.9 L826.6 738.2 L818.1 739.2 Z"/>
+    <path d="M722.0 838.7 L726.8 836.0 L733.1 838.4 L734.0 843.5 L730.1 847.4 L723.8 846.5 Z"/>
+    <path d="M172.0 684.5 L177.4 684.1 L182.1 688.9 L180.8 693.9 L175.6 695.8 L170.3 692.3 Z"/>
+    <path d="M847.0 657.2 L851.0 655.0 L856.2 657.0 L857.0 661.2 L853.8 664.5 L848.5 663.8 Z"/>
+    </g>
+    <rect x="100" y="100" width="824" height="824" filter="url(#grain)" opacity="0.11"/>
+  </g>
+  <rect x="101" y="101" width="822" height="822" rx="184" fill="none" stroke="#ffffff" stroke-opacity="0.09" stroke-width="2"/>
+
+  <!-- a roda -->
+  <g filter="url(#wheelShadow)">
+    <circle cx="512" cy="512" r="292" fill="url(#tire)"/>
+  </g>
+  <!-- banda de rodagem -->
+  <g fill="#050608" opacity="0.55"><path d="M498.8 222.3 L525.2 222.3 L522.4 242.2 L501.6 242.2 Z"/><path d="M549.4 224.4 L575.3 229.0 L569.1 248.1 L548.6 244.5 Z"/><path d="M598.7 235.3 L623.4 244.3 L614.0 262.0 L594.5 254.9 Z"/><path d="M645.5 254.5 L668.2 267.7 L655.9 283.5 L637.9 273.2 Z"/><path d="M688.1 281.6 L708.3 298.5 L693.4 312.0 L677.5 298.7 Z"/><path d="M725.5 315.7 L742.4 335.9 L725.3 346.5 L712.0 330.6 Z"/><path d="M756.3 355.8 L769.5 378.5 L750.8 386.1 L740.5 368.1 Z"/><path d="M779.7 400.6 L788.7 425.3 L769.1 429.5 L762.0 410.0 Z"/><path d="M795.0 448.7 L799.6 474.6 L779.5 475.4 L775.9 454.9 Z"/><path d="M801.7 498.8 L801.7 525.2 L781.8 522.4 L781.8 501.6 Z"/><path d="M799.6 549.4 L795.0 575.3 L775.9 569.1 L779.5 548.6 Z"/><path d="M788.7 598.7 L779.7 623.4 L762.0 614.0 L769.1 594.5 Z"/><path d="M769.5 645.5 L756.3 668.2 L740.5 655.9 L750.8 637.9 Z"/><path d="M742.4 688.1 L725.5 708.3 L712.0 693.4 L725.3 677.5 Z"/><path d="M708.3 725.5 L688.1 742.4 L677.5 725.3 L693.4 712.0 Z"/><path d="M668.2 756.3 L645.5 769.5 L637.9 750.8 L655.9 740.5 Z"/><path d="M623.4 779.7 L598.7 788.7 L594.5 769.1 L614.0 762.0 Z"/><path d="M575.3 795.0 L549.4 799.6 L548.6 779.5 L569.1 775.9 Z"/><path d="M525.2 801.7 L498.8 801.7 L501.6 781.8 L522.4 781.8 Z"/><path d="M474.6 799.6 L448.7 795.0 L454.9 775.9 L475.4 779.5 Z"/><path d="M425.3 788.7 L400.6 779.7 L410.0 762.0 L429.5 769.1 Z"/><path d="M378.5 769.5 L355.8 756.3 L368.1 740.5 L386.1 750.8 Z"/><path d="M335.9 742.4 L315.7 725.5 L330.6 712.0 L346.5 725.3 Z"/><path d="M298.5 708.3 L281.6 688.1 L298.7 677.5 L312.0 693.4 Z"/><path d="M267.7 668.2 L254.5 645.5 L273.2 637.9 L283.5 655.9 Z"/><path d="M244.3 623.4 L235.3 598.7 L254.9 594.5 L262.0 614.0 Z"/><path d="M229.0 575.3 L224.4 549.4 L244.5 548.6 L248.1 569.1 Z"/><path d="M222.3 525.2 L222.3 498.8 L242.2 501.6 L242.2 522.4 Z"/><path d="M224.4 474.6 L229.0 448.7 L248.1 454.9 L244.5 475.4 Z"/><path d="M235.3 425.3 L244.3 400.6 L262.0 410.0 L254.9 429.5 Z"/><path d="M254.5 378.5 L267.7 355.8 L283.5 368.1 L273.2 386.1 Z"/><path d="M281.6 335.9 L298.5 315.7 L312.0 330.6 L298.7 346.5 Z"/><path d="M315.7 298.5 L335.9 281.6 L346.5 298.7 L330.6 312.0 Z"/><path d="M355.8 267.7 L378.5 254.5 L386.1 273.2 L368.1 283.5 Z"/><path d="M400.6 244.3 L425.3 235.3 L429.5 254.9 L410.0 262.0 Z"/><path d="M448.7 229.0 L474.6 224.4 L475.4 244.5 L454.9 248.1 Z"/></g>
+  <circle cx="512" cy="512" r="268" fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="3"/>
+  <circle cx="512" cy="512" r="253" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="60"/>
+  <path d="M263.0 379.6 A282 282 0 0 1 685.6 289.8" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- aro dourado -->
+  <circle cx="512" cy="512" r="214" fill="url(#goldRim)"/>
+  <circle cx="512" cy="512" r="196" fill="url(#goldInner)"/>
+  <circle cx="512" cy="512" r="190" fill="url(#recess)"/>
+
+  <!-- face da roda: ouro com 5 janelas -->
+  <circle cx="512" cy="512" r="190" fill="url(#gold)"/>
+  <g fill="url(#recess)" stroke="#0b0c10" stroke-width="28" stroke-linejoin="round">
+      <path d="M545.0 426.1 L545.0 347.3 A168 168 0 0 1 658.5 429.7 L583.5 454.1 A92 92 0 0 0 545.0 426.1 Z"/>
+      <path d="M603.9 516.8 L678.9 492.5 A168 168 0 0 1 635.5 625.9 L589.2 562.1 A92 92 0 0 0 603.9 516.8 Z"/>
+      <path d="M535.8 600.9 L582.1 664.7 A168 168 0 0 1 441.9 664.7 L488.2 600.9 A92 92 0 0 0 535.8 600.9 Z"/>
+      <path d="M434.8 562.1 L388.5 625.9 A168 168 0 0 1 345.1 492.5 L420.1 516.8 A92 92 0 0 0 434.8 562.1 Z"/>
+      <path d="M440.5 454.1 L365.5 429.7 A168 168 0 0 1 479.0 347.3 L479.0 426.1 A92 92 0 0 0 440.5 454.1 Z"/>
+  </g>
+  <g stroke="#fff6cf" stroke-opacity="0.35" stroke-width="4" stroke-linecap="round">
+      <line class="crease" x1="512.0" y1="438.0" x2="512.0" y2="336.0"/>
+      <line class="crease" x1="582.4" y1="489.1" x2="679.4" y2="457.6"/>
+      <line class="crease" x1="555.5" y1="571.9" x2="615.5" y2="654.4"/>
+      <line class="crease" x1="468.5" y1="571.9" x2="408.5" y2="654.4"/>
+      <line class="crease" x1="441.6" y1="489.1" x2="344.6" y2="457.6"/>
+  </g>
+
+  <!-- cubo -->
+  <circle cx="512" cy="512" r="64" fill="url(#goldRim)"/>
+  <circle cx="512" cy="512" r="54" fill="url(#goldInner)"/>
+  <circle cx="535.5" cy="479.6" r="7.5" fill="#3a2a0c"/><circle cx="550.0" cy="524.4" r="7.5" fill="#3a2a0c"/><circle cx="512.0" cy="552.0" r="7.5" fill="#3a2a0c"/><circle cx="474.0" cy="524.4" r="7.5" fill="#3a2a0c"/><circle cx="488.5" cy="479.6" r="7.5" fill="#3a2a0c"/>
+  <circle cx="512" cy="512" r="20" fill="url(#gold)" stroke="#5c380a" stroke-opacity="0.5" stroke-width="2"/>
+
+  <!-- reflexo no aro -->
+  <path d="M318.4 441.5 A206 206 0 0 1 476.2 309.1" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- o achado -->
+  <path d="M742 206 C750 254 756 260 804 268 C756 276 750 282 742 330 C734 282 728 276 680 268 C728 260 734 254 742 206 Z" fill="#fff3c4" opacity="0.55" filter="url(#soft)"/>
+  <path d="M742 206 C750 254 756 260 804 268 C756 276 750 282 742 330 C734 282 728 276 680 268 C728 260 734 254 742 206 Z" fill="url(#spark)"/>
+</svg>
