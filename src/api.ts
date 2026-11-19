@@ -1,5 +1,6 @@
 import type { CatalogTheme } from "./catalog/render";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { applyPrefs, Currency, getLang, Lang } from "./i18n";
 
 export const MAX_PHOTOS = 3;
 
@@ -104,6 +105,10 @@ export interface Settings {
   /** visual do catálogo: claro (padrão) ou escuro */
   catalogTheme?: CatalogTheme;
   lastCatalogDir?: string;
+  /** idioma da interface */
+  language?: Lang;
+  /** moeda dos preços */
+  currency?: Currency;
 }
 
 export interface SaleItem {
@@ -139,6 +144,18 @@ let imagesDir: string | null = null;
 
 export async function initApi() {
   imagesDir = await invoke<string>("images_dir");
+  try {
+    applyPrefs(await invoke<Settings>("get_settings"));
+  } catch {
+    applyPrefs({});
+  }
+}
+
+/** Salva idioma/moeda junto das outras configurações e aplica na hora. */
+export async function savePrefs(p: Pick<Settings, "language" | "currency">) {
+  const current = await invoke<Settings>("get_settings").catch(() => ({}) as Settings);
+  await invoke<void>("save_settings", { settings: { ...current, ...p } });
+  applyPrefs(p);
 }
 
 export function imageUrl(file: string | null | undefined): string | null {
@@ -179,9 +196,47 @@ export const api = {
   copyImage: (png: string) => invoke<void>("copy_image", { png }),
 };
 
+/** Mensagens de erro do Rust (em português) e a tradução; as que terminam em ":" têm detalhe técnico depois. */
+const RUST_ERRORS: [string, string][] = [
+  ["A venda precisa de pelo menos um modelo.", "A sale needs at least one model."],
+  ["Confira as quantidades e os valores da venda.", "Check the sale's quantities and prices."],
+  ["Um dos modelos da venda não existe mais.", "One of the models in this sale no longer exists."],
+  ["Não consegui criar o arquivo:", "Couldn't create the file:"],
+  ["Não consegui abrir o arquivo:", "Couldn't open the file:"],
+  ["Esse arquivo não é um backup válido do Garimpalo (.zip).", "This file isn't a valid Garimpalo backup (.zip)."],
+  ["Backup inválido: falta o garimpalo.json.", "Invalid backup: garimpalo.json is missing."],
+  ["Backup corrompido:", "Corrupted backup:"],
+  ["Esse arquivo não é um backup do Garimpalo.", "This file isn't a Garimpalo backup."],
+  ["Informe o nome do modelo.", "Enter the model name."],
+  ["No máximo", "At most"],
+  ["Uma das fotos não foi encontrada. Adicione de novo.", "One of the photos wasn't found. Please add it again."],
+  ["Não consegui abrir", "Couldn't open"],
+  ["Imagem colada inválida.", "The pasted image is invalid."],
+  ["Imagem inválida", "Invalid image"],
+  ["Não consegui ler a imagem:", "Couldn't read the image:"],
+  [
+    "Formato não suportado. Use JPG, PNG ou WEBP (no iPhone, exporte a foto HEIC como JPG).",
+    "Unsupported format. Use JPG, PNG or WEBP (on iPhone, export HEIC photos as JPG).",
+  ],
+  ["Imagem corrompida:", "Corrupted image:"],
+  ["Foto não encontrada:", "Photo not found:"],
+  ["Falha ao gravar a foto:", "Couldn't save the photo:"],
+];
+
+function translateError(msg: string): string {
+  if (getLang() !== "en") return msg;
+  for (const [pt, en] of RUST_ERRORS) {
+    if (msg.startsWith(pt)) {
+      // "No máximo 3 fotos por modelo." → "At most 3 photos per model."
+      return (en + msg.slice(pt.length)).replace(" fotos por modelo.", " photos per model.");
+    }
+  }
+  return msg;
+}
+
 export function errorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return translateError(e);
+  if (e instanceof Error) return translateError(e.message);
   return String(e);
 }
 export const COLLECTION = "hotwheels";

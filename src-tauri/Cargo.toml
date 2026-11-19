@@ -1,6 +1,6 @@
 [package]
 name = "garimpalo"
-version = "0.1.0"
+version = "0.2.0"
 description = "Garimpalo - gestão de coleção Hot Wheels"
 edition = "2021"
 

@@ -1,20 +1,25 @@
 import { Fit, imageUrl, MAX_PHOTOS, Photo, photoFit, PhotoProgress } from "../api";
 import FramedImage from "./FramedImage";
 import { formatBytes } from "../format";
+import { L } from "../i18n";
 
 export type Slot =
   | { kind: "ready"; key: string; photo: Photo; saved?: { from: number; to: number } }
   | { kind: "busy"; key: string; stage: PhotoProgress["stage"] };
 
-const STAGES: Record<PhotoProgress["stage"], { label: string; step: number }> = {
-  reading: { label: "Lendo a foto…", step: 1 },
-  original: { label: "Corrigindo orientação…", step: 2 },
-  compressing: { label: "Comprimindo em WebP…", step: 3 },
-  done: { label: "Pronto!", step: 4 },
+const STAGES: Record<PhotoProgress["stage"], { label: () => string; step: number }> = {
+  reading: { label: () => L("Lendo a foto…", "Reading photo…"), step: 1 },
+  original: { label: () => L("Corrigindo orientação…", "Fixing orientation…"), step: 2 },
+  compressing: { label: () => L("Comprimindo em WebP…", "Compressing to WebP…"), step: 3 },
+  done: { label: () => L("Pronto!", "Done!"), step: 4 },
 };
 
-const LABELS = ["Capa", "Foto 2", "Foto 3"];
-const HINTS = ["frente da cartela", "verso da caixa", "carrinho / mockup"];
+const labels = () => [L("Capa", "Cover"), L("Foto 2", "Photo 2"), L("Foto 3", "Photo 3")];
+const hints = () => [
+  L("frente da cartela", "front of the card"),
+  L("verso da caixa", "back of the box"),
+  L("carrinho / mockup", "loose car / mockup"),
+];
 
 export default function PhotoSlots({
   slots,
@@ -45,6 +50,8 @@ export default function PhotoSlots({
       ),
     );
 
+  const LABELS = labels();
+  const HINTS = hints();
   return (
     <div className={`photo-slots ${dragOver ? "over" : ""}`}>
       {Array.from({ length: MAX_PHOTOS }, (_, i) => {
@@ -58,8 +65,10 @@ export default function PhotoSlots({
                   <span className="slot-plus">＋</span>
                   {big ? (
                     <>
-                      <strong>Adicionar fotos</strong>
-                      <span>Clique, arraste ou cole (⌘/Ctrl+V) — até {MAX_PHOTOS}</span>
+                      <strong>{L("Adicionar fotos", "Add photos")}</strong>
+                      <span>
+                        {L("Clique, arraste ou cole (⌘/Ctrl+V) — até", "Click, drag or paste (⌘/Ctrl+V) — up to")} {MAX_PHOTOS}
+                      </span>
                     </>
                   ) : (
                     <span>{HINTS[i]}</span>
@@ -73,7 +82,7 @@ export default function PhotoSlots({
             ) : slot.kind === "busy" ? (
               <div className="slot-busy">
                 <span className="spinner" />
-                <span className="slot-stage">{STAGES[slot.stage].label}</span>
+                <span className="slot-stage">{STAGES[slot.stage].label()}</span>
                 <div className="progress">
                   <div style={{ width: `${(STAGES[slot.stage].step / 4) * 100}%` }} />
                 </div>
@@ -81,20 +90,20 @@ export default function PhotoSlots({
             ) : (
               <div className="slot-img">
                 <FramedImage src={imageUrl(slot.photo.file) ?? ""} fit={photoFit(slot.photo)} />
-                <div className="fit-toggle" title="Como a foto ocupa o card e o catálogo">
+                <div className="fit-toggle" title={L("Como a foto ocupa o card e o catálogo", "How the photo fills the card and the catalog")}>
                   <button
                     type="button"
                     className={photoFit(slot.photo) === "cover" ? "on" : ""}
                     onClick={() => setFit(i, "cover")}
-                    title="Preencher: a foto ocupa o quadro todo"
+                    title={L("Preencher: a foto ocupa o quadro todo", "Fill: the photo covers the whole frame")}
                   >
-                    {big ? "Preencher" : "▣"}
+                    {big ? L("Preencher", "Fill") : "▣"}
                   </button>
                   <button
                     type="button"
                     className={photoFit(slot.photo) === "blur" ? "on" : ""}
                     onClick={() => setFit(i, "blur")}
-                    title="Blur: a foto inteira, com o fundo desfocado"
+                    title={L("Blur: a foto inteira, com o fundo desfocado", "Blur: the whole photo over a blurred background")}
                   >
                     {big ? "Blur" : "◫"}
                   </button>
@@ -105,28 +114,28 @@ export default function PhotoSlots({
                   </span>
                 )}
                 <div className="slot-actions">
-                  <button type="button" onClick={() => onEdit(slot.key)} title="Recortar, endireitar e ajustar cor">
-                    ✎ {big && "Editar"}
+                  <button type="button" onClick={() => onEdit(slot.key)} title={L("Recortar, endireitar e ajustar cor", "Crop, straighten and adjust color")}>
+                    ✎ {big && L("Editar", "Edit")}
                   </button>
-                  <button type="button" onClick={() => onCopy(slot.photo)} title="Copiar para colar no WhatsApp">
+                  <button type="button" onClick={() => onCopy(slot.photo)} title={L("Copiar para colar no WhatsApp", "Copy to paste into WhatsApp")}>
                     ⧉
                   </button>
                   {!big && (
-                    <button type="button" onClick={() => makeCover(i)} title="Usar como capa">
+                    <button type="button" onClick={() => makeCover(i)} title={L("Usar como capa", "Use as cover")}>
                       ★
                     </button>
                   )}
                   {i > 0 && !big && i + 1 < slots.length && (
-                    <button type="button" onClick={() => move(i, i + 1)} title="Mover para a direita">
+                    <button type="button" onClick={() => move(i, i + 1)} title={L("Mover para a direita", "Move right")}>
                       →
                     </button>
                   )}
                   {i > 1 && (
-                    <button type="button" onClick={() => move(i, i - 1)} title="Mover para a esquerda">
+                    <button type="button" onClick={() => move(i, i - 1)} title={L("Mover para a esquerda", "Move left")}>
                       ←
                     </button>
                   )}
-                  <button type="button" className="danger-text" onClick={() => remove(i)} title="Remover foto">
+                  <button type="button" className="danger-text" onClick={() => remove(i)} title={L("Remover foto", "Remove photo")}>
                     ✕
                   </button>
                 </div>
@@ -136,7 +145,12 @@ export default function PhotoSlots({
           </div>
         );
       })}
-      <p className="muted tiny slot-tip">A capa é a foto que vai no catálogo. As outras ficam para mandar no privado.</p>
+      <p className="muted tiny slot-tip">
+        {L(
+          "A capa é a foto que vai no catálogo. As outras ficam para mandar no privado.",
+          "The cover is the photo used in the catalog. The others are for sending in private chats.",
+        )}
+      </p>
     </div>
   );
 }

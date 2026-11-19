@@ -5,18 +5,20 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { api, Car, coverFit, errorMessage, imageUrl, Settings } from "../api";
 import FramedImage from "./FramedImage";
 import Icon from "./Icon";
-import { centsToInput, discountPercent, formatBRL, parseBRL } from "../format";
-import { ensureFonts, paginate, PER_PAGE_OPTIONS, renderPage, RenderOptions, THEMES } from "../catalog/render";
+import { centsToInput, discountPercent, formatMoney, parseMoney, zeroInput } from "../format";
+import { L, P } from "../i18n";
+import { ensureFonts, paginate, PER_PAGE_OPTIONS, renderPage, RenderOptions, themeLabel, THEMES } from "../catalog/render";
 
 const GRID_LABEL = { 1: "1×1", 4: "2×2", 9: "3×3", 16: "4×4" } as const;
 import { useToast } from "./Toast";
 
-const DEFAULTS: Required<Pick<Settings, "catalogTitle" | "catalogSubtitle" | "catalogFooter" | "perPage">> = {
-  catalogTitle: "Hot Wheels à venda",
+type Defaults = Required<Pick<Settings, "catalogTitle" | "catalogSubtitle" | "catalogFooter" | "perPage">>;
+const defaults = (): Defaults => ({
+  catalogTitle: L("Hot Wheels à venda", "Hot Wheels for sale"),
   catalogSubtitle: "",
-  catalogFooter: "Chama no zap pra garantir o seu!",
+  catalogFooter: L("Chama no zap pra garantir o seu!", "Message me on WhatsApp to grab yours!"),
   perPage: 9,
-};
+});
 
 interface Page {
   canvas: HTMLCanvasElement;
@@ -47,13 +49,13 @@ export default function Catalog({
   useEffect(() => {
     api
       .getSettings()
-      .then((s) => setSettings({ ...DEFAULTS, ...s }))
-      .catch(() => setSettings({ ...DEFAULTS }));
+      .then((s) => setSettings({ ...defaults(), ...s }))
+      .catch(() => setSettings({ ...defaults() }));
   }, []);
 
   const updateSettings = (patch: Partial<Settings>) => {
     setSettings((s) => {
-      const next = { ...(s ?? DEFAULTS), ...patch };
+      const next = { ...(s ?? defaults()), ...patch };
       window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => api.saveSettings(next).catch(() => {}), 400);
       return next;
@@ -154,18 +156,18 @@ export default function Catalog({
     const dir = await open({
       directory: true,
       defaultPath: settings?.lastCatalogDir,
-      title: "Onde salvar as imagens do catálogo?",
+      title: L("Onde salvar as imagens do catálogo?", "Where should the catalog images be saved?"),
     });
     if (typeof dir !== "string") return;
     setSaving(true);
     try {
       const files = await api.saveCatalogPages(
         dir,
-        "catalogo",
+        L("catalogo", "catalog"),
         pages.map((p) => p.canvas.toDataURL("image/jpeg", 0.92)),
       );
       updateSettings({ lastCatalogDir: dir });
-      toast.ok(`${files.length} imagem(ns) salva(s).`);
+      toast.ok(L(`${files.length} imagem(ns) salva(s).`, `${files.length} image(s) saved.`));
       if (files[0]) revealItemInDir(files[0]).catch(() => {});
     } catch (e) {
       toast.error(errorMessage(e));
@@ -180,9 +182,9 @@ export default function Catalog({
     setCopying(i);
     try {
       await api.copyImage(p.canvas.toDataURL("image/png"));
-      toast.ok(`Página ${i + 1} copiada — é só colar no WhatsApp.`);
+      toast.ok(L(`Página ${i + 1} copiada — é só colar no WhatsApp.`, `Page ${i + 1} copied — just paste it into WhatsApp.`));
     } catch (e) {
-      toast.error(`Não consegui copiar: ${errorMessage(e)}`);
+      toast.error(`${L("Não consegui copiar", "Couldn't copy")}: ${errorMessage(e)}`);
     } finally {
       setCopying(null);
     }
@@ -193,17 +195,17 @@ export default function Catalog({
       const off = discountPercent(c.salePrice, c.promoPrice);
       const price =
         off != null
-          ? `~${formatBRL(c.salePrice)}~ *${formatBRL(c.promoPrice)}* (-${off}%)`
+          ? `~${formatMoney(c.salePrice)}~ *${formatMoney(c.promoPrice)}* (-${off}%)`
           : c.salePrice != null || c.promoPrice != null
-            ? `*${formatBRL(c.promoPrice ?? c.salePrice)}*`
-            : "consulte";
+            ? `*${formatMoney(c.promoPrice ?? c.salePrice)}*`
+            : L("consulte", "ask for price");
       return `${i + 1}. ${c.name} — ${price}`;
     });
     const head = settings?.catalogTitle?.trim() ? `*${settings.catalogTitle.trim()}*\n\n` : "";
     const contact = [settings?.catalogFooter?.trim(), settings?.catalogPhone?.trim()].filter(Boolean).join(" ");
     const foot = contact ? `\n\n${contact}` : "";
     await writeText(head + lines.join("\n") + foot);
-    toast.ok("Lista copiada (formatação do WhatsApp).");
+    toast.ok(L("Lista copiada (formatação do WhatsApp).", "List copied (WhatsApp formatting)."));
   };
 
   const perPage = settings?.perPage ?? 9;
@@ -215,30 +217,31 @@ export default function Catalog({
       <header className="topbar" data-tauri-drag-region>
         <div className="topbar-left" data-tauri-drag-region>
           <button className="btn back" onClick={onBack}>
-            <Icon name="back" /> Garagem
+            <Icon name="back" /> {L("Garagem", "Garage")}
           </button>
           <div className="title-block" data-tauri-drag-region>
-            <h1>Catálogo de venda</h1>
+            <h1>{L("Catálogo de venda", "Sales catalog")}</h1>
             <span className="subtitle">
-              {items.length} modelo(s) · {pages.length} página(s) de até {perPage}
+              {P(items.length, ["modelo", "modelos"], ["model", "models"])} ·{" "}
+              {P(pages.length, ["página", "páginas"], ["page", "pages"])} {L("de até", "of up to")} {perPage}
             </span>
           </div>
         </div>
         <div className="topbar-actions">
           <button className="btn" onClick={copyText} disabled={!items.length}>
-            <Icon name="text" /> Copiar lista
+            <Icon name="text" /> {L("Copiar lista", "Copy list")}
           </button>
           <button className="btn primary" onClick={saveAll} disabled={!pages.length || saving || rendering}>
-            <Icon name="export" /> {saving ? "Salvando…" : "Salvar imagens"}
+            <Icon name="export" /> {saving ? L("Salvando…", "Saving…") : L("Salvar imagens", "Save images")}
           </button>
         </div>
       </header>
 
       {items.length === 0 ? (
         <div className="empty">
-          <p>Nenhum modelo selecionado.</p>
+          <p>{L("Nenhum modelo selecionado.", "No models selected.")}</p>
           <button className="btn primary" onClick={onBack}>
-            Voltar e selecionar
+            {L("Voltar e selecionar", "Go back and select")}
           </button>
         </div>
       ) : (
@@ -252,7 +255,7 @@ export default function Catalog({
                     key={n}
                     className={perPage === n ? "on" : ""}
                     onClick={() => updateSettings({ perPage: n })}
-                    title={`${n} por página (${GRID_LABEL[n]})`}
+                    title={`${n} ${L("por página", "per page")} (${GRID_LABEL[n]})`}
                   >
                     <span className={`grid-ico g${n}`}>
                       {Array.from({ length: n }, (_, k) => (
@@ -267,7 +270,7 @@ export default function Catalog({
             </section>
 
             <section>
-              <h3>Tema</h3>
+              <h3>{L("Tema", "Theme")}</h3>
               <div className="theme-grid">
                 {THEMES.map((t) => {
                   const on = (settings?.catalogTheme ?? "light") === t.id;
@@ -277,7 +280,7 @@ export default function Catalog({
                       key={t.id}
                       className={`theme-tile ${on ? "on" : ""}`}
                       onClick={() => updateSettings({ catalogTheme: t.id })}
-                      title={t.hint}
+                      title={themeLabel(t).hint}
                     >
                       <span className="mini" style={{ background: sw.bg }}>
                         {sw.headKind === "band" && <span className="mini-band" style={{ background: sw.head }} />}
@@ -292,8 +295,8 @@ export default function Catalog({
                         </span>
                         <span className="mini-btn" style={{ background: sw.button }} />
                       </span>
-                      <b>{t.name}</b>
-                      <small>{t.hint}</small>
+                      <b>{themeLabel(t).name}</b>
+                      <small>{themeLabel(t).hint}</small>
                     </button>
                   );
                 })}
@@ -301,50 +304,50 @@ export default function Catalog({
             </section>
 
             <section>
-              <h3>Textos</h3>
+              <h3>{L("Textos", "Text")}</h3>
               <label className="field">
-                <span>Título</span>
+                <span>{L("Título", "Title")}</span>
                 <input
                   value={settings?.catalogTitle ?? ""}
                   onChange={(e) => updateSettings({ catalogTitle: e.target.value })}
                 />
               </label>
               <label className="field">
-                <span>Subtítulo</span>
+                <span>{L("Subtítulo", "Subtitle")}</span>
                 <input
                   value={settings?.catalogSubtitle ?? ""}
-                  placeholder="Ex.: Lote novo de novembro"
+                  placeholder={L("Ex.: Lote novo de novembro", "e.g. New November batch")}
                   onChange={(e) => updateSettings({ catalogSubtitle: e.target.value })}
                 />
               </label>
               <label className="field">
-                <span>Botão do WhatsApp</span>
+                <span>{L("Botão do WhatsApp", "WhatsApp button")}</span>
                 <input
                   value={settings?.catalogFooter ?? ""}
-                  placeholder="Ex.: Chama no zap pra garantir o seu!"
+                  placeholder={L("Ex.: Chama no zap pra garantir o seu!", "e.g. Message me on WhatsApp to grab yours!")}
                   onChange={(e) => updateSettings({ catalogFooter: e.target.value })}
                 />
               </label>
               <label className="field">
-                <span>Número do WhatsApp (opcional)</span>
+                <span>{L("Número do WhatsApp (opcional)", "WhatsApp number (optional)")}</span>
                 <input
                   value={settings?.catalogPhone ?? ""}
-                  placeholder="Ex.: (11) 9 9999-9999"
+                  placeholder={L("Ex.: (11) 9 9999-9999", "e.g. +1 555 123 4567")}
                   inputMode="tel"
                   onChange={(e) => updateSettings({ catalogPhone: e.target.value })}
                 />
               </label>
               {(noStock > 0 || noPhoto > 0) && (
                 <p className="warn small">
-                  {noStock > 0 && <>⚠ {noStock} sem estoque. </>}
-                  {noPhoto > 0 && <>⚠ {noPhoto} sem foto.</>}
+                  {noStock > 0 && <>⚠ {noStock} {L("sem estoque", "out of stock")}. </>}
+                  {noPhoto > 0 && <>⚠ {noPhoto} {L("sem foto", "without a photo")}.</>}
                 </p>
               )}
             </section>
 
             <section>
-              <h3>Modelos e preços</h3>
-              <p className="muted small">Ajustes de preço aqui já ficam salvos no cadastro.</p>
+              <h3>{L("Modelos e preços", "Models and prices")}</h3>
+              <p className="muted small">{L("Ajustes de preço aqui já ficam salvos no cadastro.", "Price changes here are saved to the model right away.")}</p>
               <div className="catalog-items">
                 {items.map((c, i) => (
                   <CatalogRow
@@ -364,22 +367,22 @@ export default function Catalog({
           </aside>
 
           <main className="catalog-preview">
-            {rendering && pages.length === 0 && <p className="muted">Gerando…</p>}
+            {rendering && pages.length === 0 && <p className="muted">{L("Gerando…", "Rendering…")}</p>}
             {pages.map((p, i) => (
               <div key={i} className={`preview-page ${rendering ? "stale" : ""}`}>
                 <div className="preview-head">
                   <span>
-                    Página {i + 1} de {pages.length}
+                    {L("Página", "Page")} {i + 1} {L("de", "of")} {pages.length}
                   </span>
                   <button
                     className="btn small"
                     onClick={() => copyPage(i)}
                     disabled={rendering || copying != null}
                   >
-                    {copying === i ? "Copiando…" : "Copiar imagem"}
+                    {copying === i ? L("Copiando…", "Copying…") : L("Copiar imagem", "Copy image")}
                   </button>
                 </div>
-                <img src={p.preview} alt={`Página ${i + 1}`} />
+                <img src={p.preview} alt={`${L("Página", "Page")} ${i + 1}`} />
               </div>
             ))}
           </main>
@@ -418,8 +421,8 @@ function CatalogRow({
   }, [car.salePrice, car.promoPrice]);
 
   const commit = async () => {
-    const s = parseBRL(sale);
-    let p = parseBRL(promo);
+    const s = parseMoney(sale);
+    let p = parseMoney(promo);
     if (s == null || (p != null && p >= s)) p = null;
     if (s === car.salePrice && p === car.promoPrice) {
       setSale(centsToInput(s));
@@ -435,23 +438,23 @@ function CatalogRow({
   };
 
   const img = imageUrl(car.imageFile);
-  const off = discountPercent(parseBRL(sale), parseBRL(promo));
+  const off = discountPercent(parseMoney(sale), parseMoney(promo));
 
   return (
     <>
-      {pageBreak && <div className="page-break">nova página</div>}
+      {pageBreak && <div className="page-break">{L("nova página", "new page")}</div>}
       <div className="catalog-row">
         <span className="row-n">{index + 1}</span>
         <div className="row-thumb">{img && <FramedImage src={img} fit={coverFit(car)} />}</div>
         <div className="row-main">
           <div className="row-name" title={car.name}>
             {car.name}
-            {car.quantity <= 0 && <span className="tag-warn">sem estoque</span>}
+            {car.quantity <= 0 && <span className="tag-warn">{L("sem estoque", "out of stock")}</span>}
           </div>
           <div className="row-prices">
             <label>
-              <span>Preço</span>
-              <input value={sale} placeholder="0,00" onChange={(e) => setSale(e.target.value)} onBlur={commit} />
+              <span>{L("Preço", "Price")}</span>
+              <input value={sale} placeholder={zeroInput()} onChange={(e) => setSale(e.target.value)} onBlur={commit} />
             </label>
             <label>
               <span>
@@ -462,13 +465,13 @@ function CatalogRow({
           </div>
         </div>
         <div className="row-actions">
-          <button className="icon-btn" disabled={isFirst} onClick={() => onMove(-1)} title="Subir">
+          <button className="icon-btn" disabled={isFirst} onClick={() => onMove(-1)} title={L("Subir", "Move up")}>
             ▲
           </button>
-          <button className="icon-btn" disabled={isLast} onClick={() => onMove(1)} title="Descer">
+          <button className="icon-btn" disabled={isLast} onClick={() => onMove(1)} title={L("Descer", "Move down")}>
             ▼
           </button>
-          <button className="icon-btn" onClick={onRemove} title="Tirar do catálogo">
+          <button className="icon-btn" onClick={onRemove} title={L("Tirar do catálogo", "Remove from catalog")}>
             ✕
           </button>
         </div>

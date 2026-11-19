@@ -3,7 +3,8 @@ import { open, ask } from "@tauri-apps/plugin-dialog";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
 import { api, Car, errorMessage, MAX_PHOTOS, Photo, PhotoProgress, Processed } from "../api";
-import { centsToInput, discountPercent, formatBRL, parseBRL, todayISO } from "../format";
+import { centsToInput, currencySymbol, discountPercent, formatMoney, parseMoney, todayISO, zeroInput } from "../format";
+import { L } from "../i18n";
 import Modal from "./Modal";
 import PhotoEditor from "./PhotoEditor";
 import PhotoSlots, { Slot } from "./PhotoSlots";
@@ -70,10 +71,21 @@ export default function CarForm({
   const addPhotos = (sources: ({ path: string } | { data: string })[]) => {
     const free = MAX_PHOTOS - slotsRef.current.length;
     if (free <= 0) {
-      toast.error(`Máximo de ${MAX_PHOTOS} fotos. Remova uma para adicionar outra.`);
+      toast.error(
+        L(
+          `Máximo de ${MAX_PHOTOS} fotos. Remova uma para adicionar outra.`,
+          `Maximum of ${MAX_PHOTOS} photos. Remove one to add another.`,
+        ),
+      );
       return;
     }
-    if (sources.length > free) toast.error(`Só cabem mais ${free} foto(s); as demais foram ignoradas.`);
+    if (sources.length > free)
+      toast.error(
+        L(
+          `Só cabem mais ${free} foto(s); as demais foram ignoradas.`,
+          `Only ${free} more photo(s) fit; the rest were skipped.`,
+        ),
+      );
     for (const src of sources.slice(0, free)) {
       const key = newKey();
       setSlots((list) => [...list, { kind: "busy", key, stage: "reading" }]);
@@ -92,7 +104,7 @@ export default function CarForm({
   };
 
   const pickFiles = async () => {
-    const picked = await open({ multiple: true, filters: [{ name: "Imagens", extensions: IMAGE_EXT }] });
+    const picked = await open({ multiple: true, filters: [{ name: L("Imagens", "Images"), extensions: IMAGE_EXT }] });
     const paths = Array.isArray(picked) ? picked : typeof picked === "string" ? [picked] : [];
     if (paths.length) addPhotos(paths.map((path) => ({ path })));
   };
@@ -120,7 +132,7 @@ export default function CarForm({
           setDragOver(false);
           const paths = p.paths.filter((x) => IMAGE_EXT.includes(x.split(".").pop()?.toLowerCase() ?? ""));
           if (paths.length) addPhotos(paths.map((path) => ({ path })));
-          else if (p.paths.length) toast.error("Arraste imagens (JPG, PNG ou WEBP).");
+          else if (p.paths.length) toast.error(L("Arraste imagens (JPG, PNG ou WEBP).", "Drop images (JPG, PNG or WEBP)."));
         }
       })
       .then((fn) => (unlisten = fn));
@@ -143,22 +155,22 @@ export default function CarForm({
     return () => window.removeEventListener("paste", onPaste);
   }, []);
 
-  const sale = parseBRL(f.salePrice);
-  const promo = parseBRL(f.promoPrice);
+  const sale = parseMoney(f.salePrice);
+  const promo = parseMoney(f.promoPrice);
   const off = discountPercent(sale, promo);
 
   const submit = async (addAnother: boolean) => {
     if (!f.name.trim()) {
-      toast.error("Informe o nome do modelo.");
+      toast.error(L("Informe o nome do modelo.", "Enter the model name."));
       nameRef.current?.focus();
       return;
     }
     if (promo != null && sale != null && promo >= sale) {
-      toast.error("O preço promocional precisa ser menor que o preço de venda.");
+      toast.error(L("O preço promocional precisa ser menor que o preço de venda.", "The promo price must be lower than the sale price."));
       return;
     }
     if (slots.some((s) => s.kind === "busy")) {
-      toast.error("Espere as fotos terminarem de converter.");
+      toast.error(L("Espere as fotos terminarem de converter.", "Wait for the photos to finish converting."));
       return;
     }
     setBusy(true);
@@ -169,12 +181,16 @@ export default function CarForm({
         description: f.description,
         quantity: Math.max(0, parseInt(f.quantity || "0", 10) || 0),
         acquiredAt: f.acquiredAt || null,
-        acquisitionPrice: parseBRL(f.acquisitionPrice),
+        acquisitionPrice: parseMoney(f.acquisitionPrice),
         salePrice: sale,
         promoPrice: sale == null ? null : promo,
         photos: slots.flatMap((s) => (s.kind === "ready" ? [s.photo] : [])),
       });
-      toast.ok(car ? "Alterações salvas." : `“${f.name.trim()}” adicionado à garagem.`);
+      toast.ok(
+        car
+          ? L("Alterações salvas.", "Changes saved.")
+          : L(`“${f.name.trim()}” adicionado à garagem.`, `“${f.name.trim()}” added to the garage.`),
+      );
       if (addAnother) {
         // mantém data e valor pago (normalmente é o mesmo lote de compra)
         setF((s) => ({ ...fromCar(null), acquiredAt: s.acquiredAt, acquisitionPrice: s.acquisitionPrice }));
@@ -191,16 +207,16 @@ export default function CarForm({
 
   const remove = async () => {
     if (!car) return;
-    const ok = await ask(`Excluir “${car.name}” da garagem?`, {
-      title: "Excluir",
+    const ok = await ask(L(`Excluir “${car.name}” da garagem?`, `Delete “${car.name}” from the garage?`), {
+      title: L("Excluir", "Delete"),
       kind: "warning",
-      okLabel: "Excluir",
-      cancelLabel: "Cancelar",
+      okLabel: L("Excluir", "Delete"),
+      cancelLabel: L("Cancelar", "Cancel"),
     });
     if (!ok) return;
     try {
       await api.deleteCar(car.id);
-      toast.ok("Modelo excluído.");
+      toast.ok(L("Modelo excluído.", "Model deleted."));
       await onDeleted();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -211,27 +227,27 @@ export default function CarForm({
 
   return (
     <Modal
-      title={car ? "Editar modelo" : "Novo modelo"}
+      title={car ? L("Editar modelo", "Edit model") : L("Novo modelo", "New model")}
       onClose={() => (editingRef.current ? setEditing(null) : onClose())}
       wide
       footer={
         <>
           {car && (
             <button className="btn ghost danger-text" onClick={remove} disabled={busy}>
-              Excluir
+              {L("Excluir", "Delete")}
             </button>
           )}
           <div className="spacer" />
           <button className="btn ghost" onClick={onClose} disabled={busy}>
-            Cancelar
+            {L("Cancelar", "Cancel")}
           </button>
           {!car && (
             <button className="btn ghost" onClick={() => submit(true)} disabled={busy}>
-              Salvar e adicionar outro
+              {L("Salvar e adicionar outro", "Save and add another")}
             </button>
           )}
           <button className="btn primary" onClick={() => submit(false)} disabled={busy}>
-            Salvar
+            {L("Salvar", "Save")}
           </button>
         </>
       }
@@ -252,7 +268,7 @@ export default function CarForm({
           onCopy={async (photo: Photo) => {
             try {
               await api.copyPhoto(photo.file);
-              toast.ok("Foto copiada — é só colar no WhatsApp.");
+              toast.ok(L("Foto copiada — é só colar no WhatsApp.", "Photo copied — just paste it into WhatsApp."));
             } catch (e) {
               toast.error(errorMessage(e));
             }
@@ -261,27 +277,27 @@ export default function CarForm({
 
         <div className="fields">
           <label className="field">
-            <span>Nome do modelo *</span>
+            <span>{L("Nome do modelo *", "Model name *")}</span>
             <input
               ref={nameRef}
               value={f.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="Ex.: Porsche 911 Carrera RS 2.7"
+              placeholder={L("Ex.: Porsche 911 Carrera RS 2.7", "e.g. Porsche 911 Carrera RS 2.7")}
               autoFocus
             />
           </label>
           <label className="field">
-            <span>Descrição</span>
+            <span>{L("Descrição", "Description")}</span>
             <textarea
               rows={3}
               value={f.description}
               onChange={(e) => set("description", e.target.value)}
-              placeholder="Cor, série, nº na coleção, TH/STH, estado da cartela…"
+              placeholder={L("Cor, série, nº na coleção, TH/STH, estado da cartela…", "Color, series, collection #, TH/STH, card condition…")}
             />
           </label>
           <div className="row">
             <label className="field">
-              <span>Quantidade</span>
+              <span>{L("Quantidade", "Quantity")}</span>
               <input
                 type="number"
                 min={0}
@@ -290,30 +306,35 @@ export default function CarForm({
               />
             </label>
             <label className="field">
-              <span>Data da aquisição</span>
+              <span>{L("Data da aquisição", "Date acquired")}</span>
               <input type="date" value={f.acquiredAt} onChange={(e) => set("acquiredAt", e.target.value)} />
             </label>
             <label className="field">
-              <span>Valor pago (unidade)</span>
+              <span>{L("Valor pago (unidade)", "Price paid (each)")}</span>
               <MoneyInput value={f.acquisitionPrice} onChange={(v) => set("acquisitionPrice", v)} />
             </label>
           </div>
           <div className="row">
             <label className="field">
-              <span>Preço de venda</span>
+              <span>{L("Preço de venda", "Sale price")}</span>
               <MoneyInput value={f.salePrice} onChange={(v) => set("salePrice", v)} />
             </label>
             <label className="field">
-              <span>Preço promocional (opcional)</span>
+              <span>{L("Preço promocional (opcional)", "Promo price (optional)")}</span>
               <MoneyInput value={f.promoPrice} onChange={(v) => set("promoPrice", v)} disabled={sale == null} />
             </label>
             <div className="field field-note">
               {off != null ? (
                 <span className="promo-note">
-                  -{off}% · de {formatBRL(sale)} por {formatBRL(promo)}
+                  -{off}% · {L("de", "was")} {formatMoney(sale)} {L("por", "now")} {formatMoney(promo)}
                 </span>
               ) : (
-                <span className="muted small">Com preço promocional o catálogo mostra “de / por” e o selo de desconto.</span>
+                <span className="muted small">
+                  {L(
+                    "Com preço promocional o catálogo mostra “de / por” e o selo de desconto.",
+                    "With a promo price the catalog shows the old price struck through and a discount badge.",
+                  )}
+                </span>
               )}
             </div>
           </div>
@@ -327,7 +348,7 @@ export default function CarForm({
           onApply={(r) => {
             patchSlot(editingSlot.key, () => ({ kind: "ready", key: editingSlot.key, photo: r.photo }));
             setEditing(null);
-            toast.ok(`Foto ajustada · ${Math.round(r.bytesOut / 1024)} KB`);
+            toast.ok(`${L("Foto ajustada", "Photo adjusted")} · ${Math.round(r.bytesOut / 1024)} KB`);
           }}
         />
       )}
@@ -346,15 +367,15 @@ function MoneyInput({
 }) {
   return (
     <div className={`money ${disabled ? "disabled" : ""}`}>
-      <span>R$</span>
+      <span>{currencySymbol()}</span>
       <input
         inputMode="decimal"
         value={value}
         disabled={disabled}
-        placeholder="0,00"
+        placeholder={zeroInput()}
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => {
-          const c = parseBRL(value);
+          const c = parseMoney(value);
           onChange(c == null ? "" : centsToInput(c));
         }}
       />

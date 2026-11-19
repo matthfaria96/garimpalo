@@ -3,6 +3,7 @@ import Icon from "./Icon";
 import { api, Edits, errorMessage, Fit, NEUTRAL_EDITS, Photo, photoFit, Processed, Quad } from "../api";
 import FramedImage from "./FramedImage";
 import { useToast } from "./Toast";
+import { L } from "../i18n";
 
 type Pt = [number, number];
 type Tab = "crop" | "color";
@@ -15,19 +16,41 @@ const FULL: Quad = [
   [0, 1],
 ];
 const ASPECTS: { key: Aspect; label: string; ratio: number | null }[] = [
-  { key: "free", label: "Livre", ratio: null },
+  {
+    key: "free",
+    get label() {
+      return L("Livre", "Free");
+    },
+    ratio: null,
+  },
   { key: "3:4", label: "3:4", ratio: 3 / 4 },
   { key: "1:1", label: "1:1", ratio: 1 },
   { key: "4:3", label: "4:3", ratio: 4 / 3 },
 ];
 const SLIDERS: { key: keyof Edits; label: string; min: number; hint?: string }[] = [
-  { key: "brightness", label: "Brilho", min: -100 },
-  { key: "contrast", label: "Contraste", min: -100 },
-  { key: "vibrance", label: "Vibração", min: -100, hint: "Realça cores apagadas sem estourar as fortes" },
-  { key: "saturation", label: "Saturação", min: -100 },
-  { key: "temperature", label: "Temperatura", min: -100, hint: "← mais frio · mais quente →" },
-  { key: "sharpness", label: "Nitidez", min: 0 },
+  slider("brightness", ["Brilho", "Brightness"], -100),
+  slider("contrast", ["Contraste", "Contrast"], -100),
+  slider("vibrance", ["Vibração", "Vibrance"], -100, [
+    "Realça cores apagadas sem estourar as fortes",
+    "Boosts dull colors without blowing out strong ones",
+  ]),
+  slider("saturation", ["Saturação", "Saturation"], -100),
+  slider("temperature", ["Temperatura", "Temperature"], -100, ["← mais frio · mais quente →", "← cooler · warmer →"]),
+  slider("sharpness", ["Nitidez", "Sharpness"], 0),
 ];
+/** Rótulos são lidos na hora (idioma atual). */
+function slider(key: keyof Edits, label: [string, string], min: number, hint?: [string, string]) {
+  return {
+    key,
+    min,
+    get label() {
+      return L(...label);
+    },
+    get hint() {
+      return hint && L(...hint);
+    },
+  };
+}
 const MIN_SIZE = 0.04;
 const SOURCE_MAX = 1100;
 const PREVIEW_MAX = 1000;
@@ -314,14 +337,14 @@ export default function PhotoEditor({
         <header className="editor-head">
           <div className="segmented small-seg">
             <button className={tab === "crop" ? "on" : ""} onClick={() => setTab("crop")}>
-              ✂ Recorte e ângulo
+              ✂ {L("Recorte e ângulo", "Crop & angle")}
             </button>
             <button className={tab === "color" ? "on" : ""} onClick={() => setTab("color")}>
-              ◐ Cor e luz
+              ◐ {L("Cor e luz", "Color & light")}
             </button>
           </div>
           <div className="spacer" />
-          <button className="icon-btn close-btn" onClick={onClose} disabled={applying} aria-label="Fechar">
+          <button className="icon-btn close-btn" onClick={onClose} disabled={applying} aria-label={L("Fechar", "Close")}>
             <Icon name="close" size={14} stroke={2.2} />
           </button>
         </header>
@@ -365,7 +388,7 @@ export default function PhotoEditor({
                   {loupe}
                 </div>
               ) : (
-                <Spinner text="Abrindo foto…" />
+                <Spinner text={L("Abrindo foto…", "Opening photo…")} />
               )
             ) : preview ? (
               <div className="stage-preview">
@@ -373,7 +396,7 @@ export default function PhotoEditor({
                 {previewBusy && <span className="busy-dot" />}
               </div>
             ) : (
-              <Spinner text="Gerando prévia…" />
+              <Spinner text={L("Gerando prévia…", "Rendering preview…")} />
             )}
           </div>
 
@@ -381,21 +404,23 @@ export default function PhotoEditor({
             {tab === "crop" ? (
               <>
                 <section>
-                  <h3>Modo</h3>
+                  <h3>{L("Modo", "Mode")}</h3>
                   <div className="segmented">
                     <button className={!perspective ? "on" : ""} onClick={() => setMode("rect")}>
-                      Retângulo
-                      <small>recorte normal</small>
+                      {L("Retângulo", "Rectangle")}
+                      <small>{L("recorte normal", "regular crop")}</small>
                     </button>
                     <button className={perspective ? "on" : ""} onClick={() => setMode("perspective")}>
-                      Perspectiva
-                      <small>endireitar a caixa</small>
+                      {L("Perspectiva", "Perspective")}
+                      <small>{L("endireitar a caixa", "straighten the box")}</small>
                     </button>
                   </div>
                   {perspective ? (
                     <p className="muted small">
-                      Arraste cada canto até a quina da cartela. O app endireita a foto como se ela tivesse sido
-                      tirada de frente.
+                      {L(
+                        "Arraste cada canto até a quina da cartela. O app endireita a foto como se ela tivesse sido tirada de frente.",
+                        "Drag each corner to a corner of the card. The app straightens the photo as if it had been taken head-on.",
+                      )}
                     </p>
                   ) : (
                     <div className="chips">
@@ -408,7 +433,7 @@ export default function PhotoEditor({
                   )}
                 </section>
                 <section>
-                  <h3>Girar</h3>
+                  <h3>{L("Girar", "Rotate")}</h3>
                   <div className="row-btns">
                     <button className="btn ghost" onClick={() => rotate(-1)}>
                       ↺ 90°
@@ -417,7 +442,7 @@ export default function PhotoEditor({
                       ↻ 90°
                     </button>
                     <button className="btn ghost" onClick={() => setQuad(null)} disabled={isFull(quad)}>
-                      Sem recorte
+                      {L("Sem recorte", "No crop")}
                     </button>
                   </div>
                 </section>
@@ -426,7 +451,7 @@ export default function PhotoEditor({
             ) : (
               <>
                 {SLIDERS.map((s) => (
-                  <label key={s.key} className="slider" onDoubleClick={() => set(s.key, 0)} title="Duplo clique para zerar">
+                  <label key={s.key} className="slider" onDoubleClick={() => set(s.key, 0)} title={L("Duplo clique para zerar", "Double-click to reset")}>
                     <span className="slider-head">
                       {s.label}
                       <b>{(edits[s.key] as number) > 0 && s.min < 0 ? "+" : ""}{edits[s.key] as number}</b>
@@ -448,7 +473,7 @@ export default function PhotoEditor({
                   disabled={!colorChanged}
                   onClick={() => setEdits((e) => ({ ...e, ...Object.fromEntries(SLIDERS.map((s) => [s.key, 0])) }))}
                 >
-                  Zerar cor e luz
+                  {L("Zerar cor e luz", "Reset color & light")}
                 </button>
               </>
             )}
@@ -460,22 +485,22 @@ export default function PhotoEditor({
             className="btn ghost"
             disabled={applying}
             onClick={() => setEdits((e) => ({ ...NEUTRAL_EDITS, fit: e.fit }))}
-            title="Volta a foto original, sem nenhum ajuste"
+            title={L("Volta a foto original, sem nenhum ajuste", "Back to the original photo, with no adjustments")}
           >
-            Restaurar original
+            {L("Restaurar original", "Restore original")}
           </button>
           <div className="spacer" />
           <button className="btn ghost" onClick={onClose} disabled={applying}>
-            Cancelar
+            {L("Cancelar", "Cancel")}
           </button>
           <button className="btn primary" onClick={apply} disabled={applying || !source}>
-            Aplicar
+            {L("Aplicar", "Apply")}
           </button>
         </footer>
 
         {applying && (
           <div className="editor-busy">
-            <Spinner text="Aplicando ajustes e comprimindo…" />
+            <Spinner text={L("Aplicando ajustes e comprimindo…", "Applying adjustments and compressing…")} />
           </div>
         )}
       </div>
@@ -506,15 +531,15 @@ function FitSection({
 }) {
   return (
     <section>
-      <h3>No card e no catálogo</h3>
+      <h3>{L("No card e no catálogo", "On the card and in the catalog")}</h3>
       <div className="segmented">
         <button className={fit === "cover" ? "on" : ""} onClick={() => onFit("cover")}>
-          Preencher
-          <small>ocupa o quadro todo</small>
+          {L("Preencher", "Fill")}
+          <small>{L("ocupa o quadro todo", "covers the whole frame")}</small>
         </button>
         <button className={fit === "blur" ? "on" : ""} onClick={() => onFit("blur")}>
           Blur
-          <small>foto inteira, fundo desfocado</small>
+          <small>{L("foto inteira, fundo desfocado", "whole photo, blurred background")}</small>
         </button>
       </div>
       <div className="fit-preview">
@@ -523,8 +548,14 @@ function FitSection({
       </div>
       <p className="muted tiny">
         {fit === "cover"
-          ? "Dica: recortar em 3:4 deixa a foto exatamente no formato do card."
-          : "A foto aparece inteira; as sobras viram um blur dela mesma."}
+          ? L(
+              "Dica: recortar em 3:4 deixa a foto exatamente no formato do card.",
+              "Tip: cropping to 3:4 makes the photo match the card exactly.",
+            )
+          : L(
+              "A foto aparece inteira; as sobras viram um blur dela mesma.",
+              "The whole photo is shown; the leftover space becomes a blur of itself.",
+            )}
       </p>
     </section>
   );

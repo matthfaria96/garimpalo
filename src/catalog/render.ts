@@ -3,7 +3,8 @@
 // uma cor forte para a promoção. Cada tema muda a personalidade (cabeçalho, tipografia,
 // card, botão), não só as cores.
 import type { Fit } from "../api";
-import { discountPercent, formatBRL } from "../format";
+import { discountPercent, formatMoney, moneyParts } from "../format";
+import { getLang, L } from "../i18n";
 
 export interface RenderItem {
   name: string;
@@ -65,6 +66,21 @@ interface Theme {
   badge: { bg: string; ink: string; font: FontSpec };
   chip: { bg: string; ink: string };
   button: { fill: [string, string]; ink: string; icon: string; glow: string; border?: string; shine: boolean };
+}
+
+/** Nome e descrição dos temas em inglês (em português ficam no próprio tema). */
+const THEME_EN: Record<CatalogTheme, { name: string; hint: string }> = {
+  light: { name: "WhatsApp", hint: "Like a WhatsApp chat" },
+  dark: { name: "WhatsApp dark", hint: "WhatsApp in dark mode" },
+  vitrine: { name: "Showcase", hint: "Clean and refined, like a premium store" },
+  oferta: { name: "Flash sale", hint: "Black and yellow, Black Friday urgency" },
+  pista: { name: "Track", hint: "Vibrant orange, Hot Wheels energy" },
+  colecionador: { name: "Collector", hint: "Cream, navy and gold" },
+  neon: { name: "Neon", hint: "Gamer night, pink and cyan" },
+};
+
+export function themeLabel(t: Theme): { name: string; hint: string } {
+  return getLang() === "en" ? THEME_EN[t.id] : { name: t.name, hint: t.hint };
 }
 
 const WA_BUTTON: Theme["button"] = { fill: ["#2fdc73", "#1ebe5d"], ink: "#ffffff", icon: "#ffffff", glow: "rgba(37,211,102,0.45)", shine: true };
@@ -716,13 +732,13 @@ function drawCard(ctx: CanvasRenderingContext2D, T: Theme, item: RenderItem, x: 
   if (price == null) {
     ctx.font = font(TEXT_FONT, Math.round(m.price * 0.6));
     ctx.fillStyle = T.nameFont.color;
-    ctx.fillText("Consulte o preço", ix, baseY);
+    ctx.fillText(L("Consulte o preço", "Ask for price"), ix, baseY);
     return;
   }
-  const old = promo ? formatBRL(item.salePrice) : "";
+  const old = promo ? formatMoney(item.salePrice) : "";
   const full = Math.round(m.price * F.scale);
   let size = full;
-  let parts = measurePrice(ctx, F, formatBRL(price), size);
+  let parts = measurePrice(ctx, F, price, size);
   const oldSize = () => Math.round(Math.max(size, m.price * 0.8) * 0.42);
   const oldW = () => {
     if (!old) return 0;
@@ -731,7 +747,7 @@ function drawCard(ctx: CanvasRenderingContext2D, T: Theme, item: RenderItem, x: 
   };
   while (parts.total + oldW() > iw && size > full * 0.6) {
     size -= 1;
-    parts = measurePrice(ctx, F, formatBRL(price), size);
+    parts = measurePrice(ctx, F, price, size);
   }
   ctx.fillStyle = promo ? F.promo : F.color;
   ctx.textAlign = "left";
@@ -757,10 +773,8 @@ function drawCard(ctx: CanvasRenderingContext2D, T: Theme, item: RenderItem, x: 
 }
 
 /** Separa "R$" do número para desenhar o símbolo menor (o número é o que o olho procura). */
-function measurePrice(ctx: CanvasRenderingContext2D, F: FontSpec, text: string, size: number) {
-  const m = /^(R\$)\s*(.*)$/.exec(text.replace(/ /g, " "));
-  const cur = m ? m[1] : "";
-  const num = m ? m[2] : text;
+function measurePrice(ctx: CanvasRenderingContext2D, F: FontSpec, cents: number, size: number) {
+  const { cur, num } = moneyParts(cents);
   ctx.font = font({ family: F.family, weight: 600 }, Math.round(size * 0.46));
   const curW = cur ? ctx.measureText(cur).width + size * 0.1 : 0;
   ctx.font = font(F, size);

@@ -5,6 +5,7 @@ import Garage from "./components/Garage";
 import Catalog from "./components/Catalog";
 import Sales from "./components/Sales";
 import { ToastProvider, useToast } from "./components/Toast";
+import { usePrefs } from "./i18n";
 
 type View = { name: "home" } | { name: "garage" } | { name: "catalog" } | { name: "sales" };
 
@@ -72,7 +73,7 @@ function Shell() {
 export default function App() {
   return (
     <ToastProvider>
-      <Shell />
+      <Shell key={usePrefs()} />
     </ToastProvider>
   );
 }

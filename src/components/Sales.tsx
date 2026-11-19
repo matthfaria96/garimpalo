@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { api, errorMessage, imageUrl, Sale } from "../api";
-import { formatBRL, formatDateTime, normalize, saleSummary, todayISO } from "../format";
+import { formatMoney, formatDateTime, normalize, saleSummary, todayISO } from "../format";
+import { L, P } from "../i18n";
 import Icon from "./Icon";
 import { useToast } from "./Toast";
 
@@ -44,18 +45,26 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
 
   const copy = async (s: Sale) => {
     await writeText(saleSummary(s));
-    toast.ok("Resumo copiado — é só colar no WhatsApp.");
+    toast.ok(L("Resumo copiado — é só colar no WhatsApp.", "Summary copied — just paste it into WhatsApp."));
   };
 
   const undo = async (s: Sale) => {
     const ok = await ask(
-      `Desfazer a venda${s.buyer ? ` de ${s.buyer}` : ""} (${formatBRL(s.total)})? As unidades voltam para o estoque.`,
-      { title: "Desfazer venda", kind: "warning", okLabel: "Desfazer", cancelLabel: "Manter" },
+      L(
+        `Desfazer a venda${s.buyer ? ` de ${s.buyer}` : ""} (${formatMoney(s.total)})? As unidades voltam para o estoque.`,
+        `Undo the sale${s.buyer ? ` to ${s.buyer}` : ""} (${formatMoney(s.total)})? The units go back into stock.`,
+      ),
+      {
+        title: L("Desfazer venda", "Undo sale"),
+        kind: "warning",
+        okLabel: L("Desfazer", "Undo"),
+        cancelLabel: L("Manter", "Keep"),
+      },
     );
     if (!ok) return;
     try {
       await api.deleteSale(s.id, true);
-      toast.ok("Venda desfeita. Estoque devolvido.");
+      toast.ok(L("Venda desfeita. Estoque devolvido.", "Sale undone. Stock restored."));
       await load();
       await onChanged();
     } catch (e) {
@@ -68,12 +77,13 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
       <header className="topbar" data-tauri-drag-region>
         <div className="topbar-left" data-tauri-drag-region>
           <button className="btn back" onClick={onBack}>
-            <Icon name="back" /> Início
+            <Icon name="back" /> {L("Início", "Home")}
           </button>
           <div className="title-block" data-tauri-drag-region>
-            <h1>Vendas</h1>
+            <h1>{L("Vendas", "Sales")}</h1>
             <span className="subtitle">
-              {sales?.length ?? 0} venda(s) · {totals.units} unidade(s)
+              {P(sales?.length ?? 0, ["venda", "vendas"], ["sale", "sales"])} ·{" "}
+              {P(totals.units, ["unidade", "unidades"], ["unit", "units"])}
             </span>
           </div>
         </div>
@@ -82,7 +92,7 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
             <Icon name="search" size={15} />
             <input
               className="search"
-              placeholder="Buscar comprador, modelo…"
+              placeholder={L("Buscar comprador, modelo…", "Search buyer, model…")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -93,15 +103,15 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
       <div className="sales-main">
         <div className="sales-stats">
           <div>
-            <span>Este mês</span>
-            <strong>{formatBRL(totals.month)}</strong>
+            <span>{L("Este mês", "This month")}</span>
+            <strong>{formatMoney(totals.month)}</strong>
           </div>
           <div>
-            <span>Total vendido</span>
-            <strong>{formatBRL(totals.all)}</strong>
+            <span>{L("Total vendido", "Total sold")}</span>
+            <strong>{formatMoney(totals.all)}</strong>
           </div>
           <div>
-            <span>Unidades vendidas</span>
+            <span>{L("Unidades vendidas", "Units sold")}</span>
             <strong>{totals.units}</strong>
           </div>
         </div>
@@ -111,8 +121,13 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
             <div className="empty-icon">
               <Icon name="bag" size={28} stroke={1.6} />
             </div>
-            <h2>Nenhuma venda ainda</h2>
-            <p>Na garagem, selecione os modelos e toque em “Gerar venda”.</p>
+            <h2>{L("Nenhuma venda ainda", "No sales yet")}</h2>
+            <p>
+              {L(
+                "Na garagem, selecione os modelos e toque em “Gerar venda”.",
+                "In the garage, select the models and click “Record sale”.",
+              )}
+            </p>
           </div>
         ) : (
           <div className="sale-list">
@@ -123,16 +138,16 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
                 <article key={s.id} className="sale-card">
                   <div className="sale-card-head">
                     <div>
-                      <h2>{s.buyer || "Sem nome"}</h2>
+                      <h2>{s.buyer || L("Sem nome", "No name")}</h2>
                       <span className="subtitle">
                         {[s.contact, formatDateTime(s.createdAt)].filter(Boolean).join(" · ")}
                       </span>
                     </div>
                     <div className="sale-card-total">
-                      <strong>{formatBRL(s.total)}</strong>
+                      <strong>{formatMoney(s.total)}</strong>
                       {s.total !== sum && (
                         <span className={s.total < sum ? "neg" : "pos"}>
-                          {s.total < sum ? "desconto" : "acréscimo"} {formatBRL(Math.abs(s.total - sum))}
+                          {s.total < sum ? L("desconto", "discount") : L("acréscimo", "surcharge")} {formatMoney(Math.abs(s.total - sum))}
                         </span>
                       )}
                     </div>
@@ -141,13 +156,13 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
                     {s.items.map((i, k) => {
                       const img = imageUrl(i.imageFile);
                       return (
-                        <div key={k} className="sale-chip" title={`${i.quantity}× ${i.name} — ${formatBRL(i.unitPrice)}`}>
+                        <div key={k} className="sale-chip" title={`${i.quantity}× ${i.name} — ${formatMoney(i.unitPrice)}`}>
                           <span className="sale-chip-img">{img && <img src={img} alt="" loading="lazy" />}</span>
                           <span className="sale-chip-name">
                             {i.quantity > 1 && <b>{i.quantity}× </b>}
                             {i.name}
                           </span>
-                          <span className="sale-chip-price">{formatBRL(i.unitPrice)}</span>
+                          <span className="sale-chip-price">{formatMoney(i.unitPrice)}</span>
                         </div>
                       );
                     })}
@@ -155,14 +170,14 @@ export default function Sales({ onBack, onChanged }: { onBack: () => void; onCha
                   {s.notes && <p className="sale-notes">{s.notes}</p>}
                   <div className="sale-card-foot">
                     <span className="muted small">
-                      {units} {units === 1 ? "unidade" : "unidades"}
+                      {P(units, ["unidade", "unidades"], ["unit", "units"])}
                     </span>
                     <div className="spacer" />
                     <button className="btn small plain" onClick={() => undo(s)}>
-                      <Icon name="undo" size={14} /> Desfazer
+                      <Icon name="undo" size={14} /> {L("Desfazer", "Undo")}
                     </button>
                     <button className="btn small" onClick={() => copy(s)}>
-                      <Icon name="copy" size={14} /> Copiar resumo
+                      <Icon name="copy" size={14} /> {L("Copiar resumo", "Copy summary")}
                     </button>
                   </div>
                 </article>

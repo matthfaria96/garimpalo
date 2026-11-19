@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import Icon from "./Icon";
+import { L } from "../i18n";
 
 export default function Modal({
   title,
@@ -25,7 +26,7 @@ export default function Modal({
       <div className={`modal ${wide ? "modal-wide" : ""}`}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn close-btn" onClick={onClose} aria-label="Fechar">
+          <button className="icon-btn close-btn" onClick={onClose} aria-label={L("Fechar", "Close")}>
             <Icon name="close" size={14} stroke={2.2} />
           </button>
         </div>

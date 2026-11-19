@@ -3,7 +3,8 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { api, Car, coverFit, errorMessage, imageUrl } from "../api";
 import Icon from "./Icon";
 import FramedImage from "./FramedImage";
-import { discountPercent, finalPrice, formatBRL, formatDate, normalize } from "../format";
+import { discountPercent, finalPrice, formatMoney, formatDate, moneyParts, normalize } from "../format";
+import { L, locale, P } from "../i18n";
 import CarForm from "./CarForm";
 import SaleForm from "./SaleForm";
 import { useToast } from "./Toast";
@@ -42,7 +43,7 @@ export default function Garage({
       const hay = normalize(`${c.name} ${c.description}`);
       return terms.every((t) => hay.includes(t));
     });
-    const byName = (a: Car, b: Car) => a.name.localeCompare(b.name, "pt-BR");
+    const byName = (a: Car, b: Car) => a.name.localeCompare(b.name, locale());
     list = [...list];
     switch (sort) {
       case "name":
@@ -93,18 +94,24 @@ export default function Garage({
   };
 
   const deleteSelected = async () => {
-    const ok = await ask(`Excluir ${selected.length} modelo(s) da garagem? Não dá pra desfazer.`, {
-      title: "Excluir",
-      kind: "warning",
-      okLabel: "Excluir",
-      cancelLabel: "Cancelar",
-    });
+    const ok = await ask(
+      L(
+        `Excluir ${selected.length} modelo(s) da garagem? Não dá pra desfazer.`,
+        `Delete ${selected.length} model(s) from the garage? This can't be undone.`,
+      ),
+      {
+        title: L("Excluir", "Delete"),
+        kind: "warning",
+        okLabel: L("Excluir", "Delete"),
+        cancelLabel: L("Cancelar", "Cancel"),
+      },
+    );
     if (!ok) return;
     try {
       for (const id of selected) await api.deleteCar(id);
       onSelectedChange([]);
       await onChanged();
-      toast.ok("Modelos excluídos.");
+      toast.ok(L("Modelos excluídos.", "Models deleted."));
     } catch (e) {
       toast.error(errorMessage(e));
     }
@@ -115,12 +122,14 @@ export default function Garage({
       <header className="topbar" data-tauri-drag-region>
         <div className="topbar-left" data-tauri-drag-region>
           <button className="btn back" onClick={onBack}>
-            <Icon name="back" /> Coleções
+            <Icon name="back" /> {L("Coleções", "Collections")}
           </button>
           <div className="title-block" data-tauri-drag-region>
             <h1>Hot Wheels</h1>
             <span className="subtitle">
-              {cars.length} modelos · {totals.units} unidades · {formatBRL(totals.invested)} investido
+              {P(cars.length, ["modelo", "modelos"], ["model", "models"])} ·{" "}
+              {P(totals.units, ["unidade", "unidades"], ["unit", "units"])} · {formatMoney(totals.invested)}{" "}
+              {L("investido", "invested")}
             </span>
           </div>
         </div>
@@ -129,42 +138,44 @@ export default function Garage({
             <Icon name="search" size={15} />
             <input
               className="search"
-              placeholder="Buscar modelo, cor, série…"
+              placeholder={L("Buscar modelo, cor, série…", "Search model, color, series…")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
             {query && (
-              <button className="search-clear" onClick={() => setQuery("")} aria-label="Limpar busca">
+              <button className="search-clear" onClick={() => setQuery("")} aria-label={L("Limpar busca", "Clear search")}>
                 <Icon name="close" size={11} stroke={2.6} />
               </button>
             )}
           </label>
           <button className="btn primary" onClick={() => setEditing("new")}>
-            <Icon name="plus" /> Adicionar
+            <Icon name="plus" /> {L("Adicionar", "Add")}
           </button>
         </div>
       </header>
 
       <div className="toolbar">
         <span className="toolbar-count">
-          {visible.length === cars.length ? `${cars.length} modelos` : `${visible.length} de ${cars.length}`}
+          {visible.length === cars.length
+            ? P(cars.length, ["modelo", "modelos"], ["model", "models"])
+            : `${visible.length} ${L("de", "of")} ${cars.length}`}
         </span>
         <div className="spacer" />
         <label className="switch">
           <input type="checkbox" checked={onlyStock} onChange={(e) => setOnlyStock(e.target.checked)} />
           <span className="switch-track" />
-          Só com estoque
+          {L("Só com estoque", "In stock only")}
         </label>
         <select className="popup" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-          <option value="recent">Mais recentes</option>
-          <option value="name">Nome (A–Z)</option>
-          <option value="acquired">Data de aquisição</option>
-          <option value="price">Preço de venda</option>
-          <option value="qty">Quantidade</option>
+          <option value="recent">{L("Mais recentes", "Most recent")}</option>
+          <option value="name">{L("Nome (A–Z)", "Name (A–Z)")}</option>
+          <option value="acquired">{L("Data de aquisição", "Date acquired")}</option>
+          <option value="price">{L("Preço de venda", "Sale price")}</option>
+          <option value="qty">{L("Quantidade", "Quantity")}</option>
         </select>
         <button className="btn small" onClick={selectAllVisible} disabled={!visible.length}>
-          Selecionar {query || onlyStock ? "filtrados" : "todos"}
+          {query || onlyStock ? L("Selecionar filtrados", "Select filtered") : L("Selecionar todos", "Select all")}
         </button>
       </div>
 
@@ -173,15 +184,17 @@ export default function Garage({
           <div className="empty-icon">
             <Icon name="sparkle" size={30} stroke={1.5} />
           </div>
-          <h2>Sua garagem está vazia</h2>
-          <p>Cadastre o primeiro carrinho com foto e preço.</p>
+          <h2>{L("Sua garagem está vazia", "Your garage is empty")}</h2>
+          <p>{L("Cadastre o primeiro carrinho com foto e preço.", "Add your first car with a photo and a price.")}</p>
           <button className="btn primary" onClick={() => setEditing("new")}>
-            Adicionar o primeiro carrinho
+            {L("Adicionar o primeiro carrinho", "Add the first car")}
           </button>
         </div>
       ) : visible.length === 0 ? (
         <div className="empty">
-          <p>Nada encontrado para “{query}”.</p>
+          <p>
+            {L("Nada encontrado para", "Nothing found for")} “{query}”.
+          </p>
         </div>
       ) : (
         <div className="grid">
@@ -191,32 +204,35 @@ export default function Garage({
             const off = discountPercent(car.salePrice, car.promoPrice);
             return (
               <div key={car.id} className={`car-card ${isSel ? "selected" : ""} ${car.quantity <= 0 ? "out" : ""}`}>
-                <div className="car-img" onClick={() => toggle(car.id)} title="Clique para selecionar">
-                  {img ? <FramedImage src={img} fit={coverFit(car)} lazy /> : <span className="no-img">sem foto</span>}
+                <div className="car-img" onClick={() => toggle(car.id)} title={L("Clique para selecionar", "Click to select")}>
+                  {img ? <FramedImage src={img} fit={coverFit(car)} lazy /> : <span className="no-img">{L("sem foto", "no photo")}</span>}
                   <span className={`sel-box ${isSel ? "on" : ""}`}>{isSel && <Icon name="check" size={14} stroke={3} />}</span>
                   {off != null && <span className="off-badge">-{off}%</span>}
                   {car.photos.length > 1 && (
-                    <span className="photo-count" title={`${car.photos.length} fotos`}>
+                    <span className="photo-count" title={`${car.photos.length} ${L("fotos", "photos")}`}>
                       <Icon name="photos" size={12} stroke={2.2} /> {car.photos.length}
                     </span>
                   )}
                 </div>
-                <div className="car-info" onClick={() => setEditing(car)} title="Clique para editar">
+                <div className="car-info" onClick={() => setEditing(car)} title={L("Clique para editar", "Click to edit")}>
                   <div className="car-name">{car.name}</div>
                   <Price sale={car.salePrice} promo={car.promoPrice} />
                   <div className="car-meta">
                     {car.acquiredAt && <span>{formatDate(car.acquiredAt)}</span>}
-                    {car.acquisitionPrice != null && <span>pago {formatBRL(car.acquisitionPrice)}</span>}
+                    {car.acquisitionPrice != null && <span>
+                        {L("pago", "paid")} {formatMoney(car.acquisitionPrice)}
+                      </span>}
                   </div>
                 </div>
                 <div className="car-qty">
-                  <button onClick={() => changeQty(car, -1)} disabled={car.quantity <= 0} title="Vendi / tirei 1">
+                  <button onClick={() => changeQty(car, -1)} disabled={car.quantity <= 0} title={L("Vendi / tirei 1", "Sold / removed 1")}>
                     <Icon name="minus" size={13} stroke={2.4} />
                   </button>
                   <span>
-                    {car.quantity} <small>{car.quantity === 1 ? "unidade" : "unidades"}</small>
+                    {car.quantity}{" "}
+                    <small>{car.quantity === 1 ? L("unidade", "unit") : L("unidades", "units")}</small>
                   </span>
-                  <button onClick={() => changeQty(car, 1)} title="Mais 1">
+                  <button onClick={() => changeQty(car, 1)} title={L("Mais 1", "Add 1")}>
                     <Icon name="plus" size={13} stroke={2.4} />
                   </button>
                 </div>
@@ -229,19 +245,19 @@ export default function Garage({
       {selected.length > 0 && (
         <div className="selection-bar">
           <span className="sel-count">{selected.length}</span>
-          <span className="sel-label">{selected.length === 1 ? "selecionado" : "selecionados"}</span>
+          <span className="sel-label">{L(selected.length === 1 ? "selecionado" : "selecionados", "selected")}</span>
           <button className="btn plain small" onClick={() => onSelectedChange([])}>
-            Limpar
+            {L("Limpar", "Clear")}
           </button>
           <button className="btn plain small danger-text" onClick={deleteSelected}>
-            <Icon name="trash" size={14} /> Excluir
+            <Icon name="trash" size={14} /> {L("Excluir", "Delete")}
           </button>
           <div className="spacer" />
           <button className="btn" onClick={() => setSelling(true)}>
-            <Icon name="bag" size={15} /> Gerar venda
+            <Icon name="bag" size={15} /> {L("Gerar venda", "Record sale")}
           </button>
           <button className="btn primary" onClick={onCatalog}>
-            Gerar catálogo <Icon name="arrow" size={15} />
+            {L("Gerar catálogo", "Create catalog")} <Icon name="arrow" size={15} />
           </button>
         </div>
       )}
@@ -283,18 +299,18 @@ function Price({ sale, promo }: { sale: number | null; promo: number | null }) {
   if (now == null) {
     return (
       <div className="price">
-        <span className="price-ask">Consulte o preço</span>
+        <span className="price-ask">{L("Consulte o preço", "Ask for price")}</span>
       </div>
     );
   }
-  const num = formatBRL(now).replace(/^R\$\s*/u, "").replace(/\u00a0/g, " ").trim();
+  const { cur, num } = moneyParts(now);
   return (
     <div className="price">
       <span className={`price-now ${off != null ? "promo" : ""}`}>
-        <small>R$</small>
+        <small>{cur}</small>
         {num}
       </span>
-      {off != null && <span className="price-old">{formatBRL(sale)}</span>}
+      {off != null && <span className="price-old">{formatMoney(sale)}</span>}
     </div>
   );
 }
